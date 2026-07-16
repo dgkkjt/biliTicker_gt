@@ -73,7 +73,11 @@ impl Api for Slide {
             .ok_or_else(|| other_without_source("static_servers里面咋没东西啊"))?;
         Ok((
             c,
-            res.get("s").expect("没有s").as_str().unwrap().to_string(),
+            res.get("s")
+                .ok_or_else(|| missing_param("s"))?
+                .as_str()
+                .ok_or_else(|| missing_param("s"))?
+                .to_string(),
             (
                 res.get("challenge")
                     .ok_or_else(|| missing_param("challenge"))?
@@ -124,13 +128,13 @@ impl Api for Slide {
             .query(&params)
             .send()
             .map_err(net_work_error)?;
-        let res = res.text().unwrap();
+        let res = res.text().map_err(|e| other("什么b玩意错误", e))?;
         let res = res
             .strip_prefix("geetest_1717918222610(")
             .ok_or_else(|| other_without_source("前缀错误"))?
             .strip_suffix(")")
             .ok_or_else(|| other_without_source("后缀错误"))?;
-        let res: Value = serde_json::from_str(res).unwrap();
+        let res: Value = serde_json::from_str(res).map_err(parse_error)?;
         Ok((
             res.get("message")
                 .ok_or_else(|| missing_param("message"))?
@@ -179,11 +183,13 @@ impl GenerateW for Slide {
             let new_x = idx % 26 * 10;
             let new_y = if idx > 25 { h_sep } else { 0 };
             let pi = bg_img.crop_imm(x, y, w_sep, h_sep);
-            new_bg_img.copy_from(&pi, new_x as u32, new_y).unwrap();
+            new_bg_img
+                .copy_from(&pi, new_x as u32, new_y)
+                .map_err(|e| other("背景图拼接失败", e))?;
         }
         let new_bg_img = DynamicImage::ImageRgba8(new_bg_img);
         let res_x = Slide0::run(&slice_img, &new_bg_img)
-            .map_err(|e| other_without_source("滑块识别内部错误"))?
+            .map_err(|e| other("滑块识别内部错误", e))?
             .x1;
         Ok(res_x.to_string())
     }
@@ -196,7 +202,7 @@ impl GenerateW for Slide {
         c: &[u8],
         s: &str,
     ) -> Result<String> {
-        Ok(slide_calculate(key.parse().map_err(|e| other("滑动距离不是整数类型", e))?, gt, challenge, c, s))
+        slide_calculate(key.parse().map_err(|e| other("滑动距离不是整数类型", e))?, gt, challenge, c, s)
     }
 }
 
@@ -208,7 +214,13 @@ impl Test for Slide {
         let (c, s, args) = self.get_new_c_s_args(gt.as_str(), challenge.as_str())?;
         challenge = args.0.clone();
         let key = self.calculate_key(args)?;
-        let w = slide_calculate(key.parse().unwrap(), &gt, &challenge, &c, &s);
+        let w = self.generate_w(
+            key.as_str(),
+            gt.as_str(),
+            challenge.as_str(),
+            c.as_ref(),
+            s.as_str(),
+        )?;
         let (_, validate) =
             self.verify(gt.as_str(), challenge.as_str(), Option::from(w.as_str()))?;
         Ok(validate)

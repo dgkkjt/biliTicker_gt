@@ -31,7 +31,7 @@ impl Api for Click {
 
     fn register_test(&self, url: &str) -> crate::error::Result<(String, String)> {
         let res = self.client().get(url).send().map_err(net_work_error)?;
-        let res = res.json::<Value>().expect("解析失败");
+        let res = res.json::<Value>().map_err(parse_error)?;
         let res = res
             .get("data")
             .ok_or_else(|| missing_param("data"))?
@@ -216,8 +216,8 @@ impl GenerateW for Click {
         let pic_url = args;
         let pic_img = self.download_img(pic_url.as_str())?;
         let pic_img = image::load_from_memory(&pic_img).map_err(|e| other("图片加载失败", e))?;
-
-        let cb_res = self.cb.run(&pic_img).map_err(|e| other_without_source("cb模块内部错误"))?;
+    
+        let cb_res = self.cb.run(&pic_img).map_err(|e| other("cb模块内部错误", e))?;
         let mut res = vec![];
         for (x, y) in &cb_res {
             let position = format!(
@@ -239,7 +239,7 @@ impl GenerateW for Click {
         c: &[u8],
         s: &str,
     ) -> Result<String> {
-        Ok(click_calculate(key, gt, challenge))
+        click_calculate(key, gt, challenge)
     }
 }
 

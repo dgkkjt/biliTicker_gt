@@ -26,8 +26,26 @@ mod tests {
     #[test]
     fn click_test() {
         let mut click = Click::default();
-        let validate = click
-            .test("https://passport.bilibili.com/x/passport-login/captcha?source=main_web")
+        let url = "https://passport.bilibili.com/x/passport-login/captcha?source=main_web";
+        let (gt, challenge) = click.register_test(url).unwrap();
+        let _ = click.get_c_s(gt.as_str(), challenge.as_str(), None).unwrap();
+        let _ = click.get_type(gt.as_str(), challenge.as_str(), None).unwrap();
+        let (c, s, pic_url) = click
+            .get_new_c_s_args(gt.as_str(), challenge.as_str())
+            .unwrap();
+        // 在识别前把下载到的图片落盘，方便人工排查
+        let img_bytes = click.download_img(pic_url.as_str()).unwrap();
+        let save_path = "click_captcha.jpg";
+        std::fs::write(save_path, &img_bytes).unwrap();
+        println!("saved {} ({} bytes) from {}", save_path, img_bytes.len(), pic_url);
+
+        let key = click.calculate_key(pic_url).unwrap();
+        let w = click
+            .generate_w(key.as_str(), gt.as_str(), challenge.as_str(), c.as_ref(), s.as_str())
+            .unwrap();
+        std::thread::sleep(std::time::Duration::new(2, 0));
+        let (_, validate) = click
+            .verify(gt.as_str(), challenge.as_str(), Option::from(w.as_str()))
             .unwrap();
         println!("{}", validate);
     }

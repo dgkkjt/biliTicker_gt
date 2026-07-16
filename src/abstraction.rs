@@ -18,7 +18,7 @@ pub(crate) trait Api {
     /// - challenge
     fn register_test(&self, url: &str) -> Result<(String, String)> {
         let res = self.client().get(url).send().map_err(net_work_error)?;
-        let res = res.json::<Value>().expect("解析失败");
+        let res = res.json::<Value>().map_err(parse_error)?;
         Ok((
             res.get("gt")
                 .ok_or_else(|| missing_param("gt"))?
@@ -137,7 +137,7 @@ pub(crate) trait Api {
     /// - img
     fn download_img(&self, img_url: &str) -> Result<Vec<u8>> {
         let res = self.client().get(img_url).send().map_err(net_work_error)?;
-        Ok(res.bytes().unwrap().to_vec())
+        Ok(res.bytes().map_err(net_work_error)?.to_vec())
     }
 
     fn client(&self) -> &Client;
