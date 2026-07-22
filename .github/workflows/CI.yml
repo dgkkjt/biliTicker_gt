@@ -213,6 +213,8 @@ jobs:
           test -n "${WHEEL_PATH}"
           python -m pip install "${WHEEL_PATH}"
           export LD_LIBRARY_PATH="${ORT_BUILD_DIR}:${LD_LIBRARY_PATH:-}"
+          # Run the import outside the repository root so the source tree package does not shadow the wheel.
+          cd "$(mktemp -d)"
           python - <<'PY'
           import bili_ticket_gt_python
           print('import ok')
