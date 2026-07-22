@@ -148,8 +148,7 @@ jobs:
             --config Release \
             --build_shared_lib \
             --parallel \
-            --skip_tests \
-            --python_path "${ORT_PYTHON}"
+            --skip_tests
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
