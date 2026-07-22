@@ -93,9 +93,16 @@ jobs:
             build-essential \
             cmake \
             ninja-build \
+            python3-pip \
             pkg-config \
             curl \
             git
+      - name: Install modern CMake for ORT
+        shell: bash
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 -m pip install --user --upgrade "cmake>=3.28,<4"
+          "${HOME}/.local/bin/cmake" --version
       - name: Prepare ONNX Runtime source (shallow + retry)
         shell: bash
         run: |
@@ -143,12 +150,15 @@ jobs:
           which python || true
           python --version || true
           ORT_PYTHON="/usr/bin/python3"
+          ORT_CMAKE="${HOME}/.local/bin/cmake"
+          test -x "${ORT_CMAKE}"
           "${ORT_PYTHON}" --version
           ./build.sh \
             --config Release \
             --build_shared_lib \
             --parallel \
-            --skip_tests
+            --skip_tests \
+            --cmake_path "${ORT_CMAKE}"
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
