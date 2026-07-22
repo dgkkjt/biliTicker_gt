@@ -195,7 +195,13 @@ jobs:
           export ORT_PREFER_DYNAMIC_LINK="1"
           export LD_LIBRARY_PATH="${ORT_BUILD_DIR}:${LD_LIBRARY_PATH:-}"
 
-          maturin build --release --out dist --find-interpreter
+          # Build only for current Python (3.8) to avoid producing cp310 wheels in this job.
+          maturin build --release --out dist -i python
+      - name: Inspect built wheels
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -lah dist
       - name: Import test with built wheel
         shell: bash
         run: |
@@ -203,7 +209,9 @@ jobs:
           python -m venv .venv-test
           source .venv-test/bin/activate
           python -m pip install --upgrade pip
-          python -m pip install dist/*.whl
+          WHEEL_PATH="$(ls -1 dist/*cp38*.whl | head -n 1)"
+          test -n "${WHEEL_PATH}"
+          python -m pip install "${WHEEL_PATH}"
           export LD_LIBRARY_PATH="${ORT_BUILD_DIR}:${LD_LIBRARY_PATH:-}"
           python - <<'PY'
           import bili_ticket_gt_python
