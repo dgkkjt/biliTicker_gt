@@ -85,9 +85,6 @@ jobs:
       RUSTFLAGS: '-C target-cpu=x86-64 -C target-feature=-avx,-avx2,-fma'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
       - uses: dtolnay/rust-toolchain@stable
       - name: Install system dependencies
         run: |
@@ -139,7 +136,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export PATH="/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
           cd "${ORT_ROOT}"
+          which python3 || true
+          python3 --version || true
+          which python || true
+          python --version || true
           ORT_PYTHON="/usr/bin/python3"
           "${ORT_PYTHON}" --version
           ./build.sh \
@@ -148,6 +150,9 @@ jobs:
             --parallel \
             --skip_tests \
             --python_path "${ORT_PYTHON}"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Verify ONNX Runtime output
         shell: bash
         run: |
