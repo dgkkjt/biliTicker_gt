@@ -77,7 +77,7 @@ jobs:
     timeout-minutes: 360
     env:
       PYTHON_VERSION: '3.8'
-      ORT_VERSION: 'v1.24.0'
+      ORT_VERSION: 'v1.22.0'
       ORT_ROOT: '/opt/onnxruntime'
       ORT_BUILD_DIR: '/opt/onnxruntime/build/Linux/Release'
       CFLAGS: '-O2 -march=x86-64 -mtune=generic -mno-avx -mno-avx2 -mno-fma'
@@ -123,7 +123,15 @@ jobs:
           }
 
           sudo rm -rf "${ORT_ROOT}"
-          retry git clone --branch "${ORT_VERSION}" --depth 1 --progress https://github.com/microsoft/onnxruntime.git "${ORT_ROOT}"
+          if retry git clone --branch "${ORT_VERSION}" --depth 1 --progress https://github.com/microsoft/onnxruntime.git "${ORT_ROOT}"; then
+            echo "Using ORT ref via --branch: ${ORT_VERSION}"
+          else
+            echo "--branch failed for ${ORT_VERSION}, fallback to tag checkout"
+            retry git clone --depth 1 --progress https://github.com/microsoft/onnxruntime.git "${ORT_ROOT}"
+            cd "${ORT_ROOT}"
+            retry git fetch --tags --depth 1 origin
+            retry git checkout "tags/${ORT_VERSION}" -b "build-${ORT_VERSION}"
+          fi
           cd "${ORT_ROOT}"
           retry git submodule sync --recursive
           retry git -c submodule.fetchJobs=8 submodule update --init --recursive --depth 1 --progress
