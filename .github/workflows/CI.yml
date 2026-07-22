@@ -145,10 +145,12 @@ jobs:
           set -euo pipefail
           cd "${ORT_ROOT}"
           # Workaround: upstream archive hash drift on eigen zip snapshot.
-          # If ORT updates this file in future versions, this step remains harmless.
-          if grep -q "5ea4d05e62d7f954a46b3213f9b2535bdd866803" cmake/external/eigen.cmake; then
-            sed -i 's/5ea4d05e62d7f954a46b3213f9b2535bdd866803/51982be81bbe52572b54180454df11a3ece9a934/g' cmake/external/eigen.cmake
-            echo "Patched eigen SHA1 in cmake/external/eigen.cmake"
+          # For ORT v1.22.0 the hash source is cmake/deps.txt (not cmake/external/eigen.cmake).
+          grep -n '^eigen;' cmake/deps.txt || true
+          if grep -q "5ea4d05e62d7f954a46b3213f9b2535bdd866803" cmake/deps.txt; then
+            sed -i 's/5ea4d05e62d7f954a46b3213f9b2535bdd866803/51982be81bbe52572b54180454df11a3ece9a934/g' cmake/deps.txt
+            echo "Patched eigen SHA1 in cmake/deps.txt"
+            grep -n '^eigen;' cmake/deps.txt
           else
             echo "Expected eigen SHA1 not found; skip patch"
           fi
