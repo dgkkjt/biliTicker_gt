@@ -140,11 +140,14 @@ jobs:
         run: |
           set -euo pipefail
           cd "${ORT_ROOT}"
+          ORT_PYTHON="/usr/bin/python3"
+          "${ORT_PYTHON}" --version
           ./build.sh \
             --config Release \
             --build_shared_lib \
             --parallel \
-            --skip_tests
+            --skip_tests \
+            --python_path "${ORT_PYTHON}"
       - name: Verify ONNX Runtime output
         shell: bash
         run: |
